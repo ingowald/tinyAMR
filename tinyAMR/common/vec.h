@@ -27,6 +27,14 @@
 namespace tamr {
   namespace common {
 
+    using std::min;
+    using std::max;
+    // inline __tamr_both int min(int a, int b) { return std::min(a,b); }
+    // inline __tamr_both int max(int a, int b) { return std::max(a,b); }
+
+    // inline __tamr_both float min(float a, float b) { return std::min(a,b); }
+    // inline __tamr_both float max(float a, float b) { return std::max(a,b); }
+    
     template<typename T, int N>
     struct TAMR_INTERFACE vec_t { T t[N]; };
 
@@ -569,7 +577,7 @@ namespace tamr {
     inline __tamr_both                                                     \
     vec_t<T,3> fct(const vec_t<T,3> &a, const vec_t<T,3> &b)            \
     {                                                                   \
-      return vec_t<T,3>(fct(a.x,b.x),                                   \
+      return vec_t<T,3>(fct(a.x,b.x),                                  \
                         fct(a.y,b.y),                                   \
                         fct(a.z,b.z));                                  \
     }                                                                   \

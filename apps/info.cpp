@@ -28,7 +28,25 @@ int main(int ac, char **av)
   std::cout << "num scalars " << prettyNumber(model->scalars.size()) << std::endl;
   std::cout << "num fields  " << prettyNumber(model->fieldMetas.size()) << std::endl;
   for (auto &meta : model->fieldMetas)
-    std::cout << " - " << meta.name << " at offset " << prettyNumber(meta.offset) << std::endl;
+    std::cout << " - " << meta.name << " at offset "
+              << prettyNumber(meta.offset) << std::endl;
+  std::cout << "num different levels used " << model->refinementOfLevel.size() << std::endl;
+  for (int i=0;i<model->refinementOfLevel.size();i++) {
+    vec3i dims;
+    box3i bounds;
+    for (auto &block : model->blocks)
+      if (block.level == i) {
+        dims = block.dims;
+        bounds.extend(block.origin);
+        bounds.extend(block.origin+dims-vec3i(1));
+      }
+    std::cout << " - level[" << i << "] : " << std::endl;
+    std::cout << "   - refinement is "
+              << model->refinementOfLevel[i] << " (-> cell width "
+              << 1.f/(1<<model->refinementOfLevel[i]) << ")" << std::endl;
+    std::cout << "   - coordinate bounds on this level " << bounds << std::endl;
+    std::cout << "   - last brick on this level has dims " << dims << std::endl;
+  }
   return 0;
 }
 

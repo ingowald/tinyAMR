@@ -19,7 +19,7 @@ namespace tamr {
       /*! dimensions of this block's 3D array of cells. The Nx*Ny*Nz
           scalars for this block iwill be stored at
           scalars[block.offset] in z-major order */
-      vec3i    dimensions;
+      vec3i    dims;
       
       /*! level of this block, *relative to Model::refinementLevel* --
         i.e., the refinement level (and thus, size) or a cell in this

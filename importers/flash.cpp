@@ -139,7 +139,7 @@ namespace tamr {
                    dataspace,
                    dataspace);
     }
-
+    
     {
       dataset = file.openDataSet("node type");
       dataspace = dataset.getSpace();
@@ -427,21 +427,34 @@ namespace tamr {
       box3i coords = (const box3i &)data.blockBounds[bid];
       vec3i dims = (const vec3i &)data.blockData[bid].dims;
       // coords.size() is one less than dims
-      block.dimensions = dims;
+      block.dims = dims;
       block.level = data.blockLevel[bid];
       block.origin = coords.lower;
       block.offset = model->scalars.size();
       for (auto scalar : data.blockData[bid].values)
         model->scalars.push_back(scalar);
-      float cellWidth = data.cellWidth[bid];
+      float cellWidth = data.cellWidth[block.level];//bid];
       if (cellWidthToLevelID.find(cellWidth) == cellWidthToLevelID.end()) {
+        PING; PRINT(cellWidth);
+        int refine = int(log2(1.f/cellWidth));
+        PRINT(refine);
+        
         cellWidthToLevelID[cellWidth] = model->refinementOfLevel.size();
-        model->refinementOfLevel.push_back(int(log2(1.f/cellWidth)));
+        model->refinementOfLevel.push_back(refine);
       }
       block.level = cellWidthToLevelID[cellWidth];
 
       model->blocks.push_back(block);
     }
+    // now fix the refinement levels; flash importer stolen from tsd
+    // adjusts to FINEST level having width 1, not coarsest.
+    int minRef = 0;
+    for (auto &rol : model->refinementOfLevel)
+      minRef = std::min(minRef,rol);
+    PRINT(minRef);
+    for (auto &rol : model->refinementOfLevel)
+      rol = rol - minRef;
+      
     return model;
   }
 
