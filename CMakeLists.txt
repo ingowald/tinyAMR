@@ -63,4 +63,9 @@ add_subdirectory(tinyAMR)
 # -----------------------------------------------------------------
 add_subdirectory(importers)
 
+# ------------------------------------------------------------------
+# actual apps, including those that laucnch the converters
+# -----------------------------------------------------------------
+add_subdirectory(apps)
+
 

@@ -370,13 +370,14 @@ namespace tamr {
       return true;
     }
 
-    AMRField getField(int index)
+    AMRField getField(int index, std::string &fieldName)
     {
       try {
         // logStatus(
         //           "[import_FLASH] reading field '%s'...", fieldNames[index].c_str());
-        printf("[import_FLASH] reading field '%s'...", fieldNames[index].c_str());
-        read_variable(currentField, file, fieldNames[index].c_str());
+        fieldName = fieldNames[index].c_str();
+        printf("[import_FLASH] reading field '%s'...", fieldName.c_str());
+        read_variable(currentField, file, fieldName.c_str());
         // logStatus("[import_FLASH] converting to AMRField...");
         return toAMRField(grid, currentField);
       } catch (H5::DataSpaceIException error) {
@@ -400,7 +401,7 @@ namespace tamr {
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 
-  Model::SP import_FLASH(const char *filepath)
+  Model::SP import_FLASH(const char *filepath, int fieldIndex)
   {
     FlashReader reader;
     if (!reader.open(filepath)) {
@@ -411,7 +412,10 @@ namespace tamr {
     Model::SP model = std::make_shared<Model>();
     model->userMeta = filepath;
 
-    AMRField data = reader.getField(0);
+    std::string fieldName;
+    AMRField data = reader.getField(fieldIndex,fieldName);
+    model->fieldMetas.resize(1);
+    model->fieldMetas[0].name = fieldName;
     
     int numBlocks = data.blockLevel.size();
     assert(numBlocks == data.cellWidth.size());
@@ -435,72 +439,11 @@ namespace tamr {
         model->refinementOfLevel.push_back(int(log2(1.f/cellWidth)));
       }
       block.level = cellWidthToLevelID[cellWidth];
+
+      model->blocks.push_back(block);
     }
-    
-    // logStatus("[import_FLASH] converting to TSD objects...");
-
-    // auto blockData = ctx.createArray(ANARI_ARRAY3D, data.blockData.size());
-    // {
-    //   auto *dst = (size_t *)blockData->map();
-    //   std::transform(
-    //                  data.blockData.begin(), data.blockData.end(), dst, [&](const auto &bd) {
-    //                    auto block = ctx.createArray(
-    //                                                 ANARI_FLOAT32, bd.dims[0], bd.dims[1], bd.dims[2]);
-    //                    block->setData(bd.values);
-    //                    return block.index();
-    //                  });
-    //   blockData->unmap();
-    // }
-
-    // auto cellWidth = ctx.createArray(ANARI_FLOAT32, data.cellWidth.size());
-    // cellWidth->setData(data.cellWidth);
-
-    // auto blockBounds = ctx.createArray(ANARI_INT32_BOX3, data.blockBounds.size());
-    // blockBounds->setData(data.blockBounds.data());
-
-    // auto blockLevel = ctx.createArray(ANARI_INT32, data.blockLevel.size());
-    // blockLevel->setData(data.blockLevel);
-
-    // field->setParameterObject("cellWidth", *cellWidth);
-    // field->setParameterObject("block.bounds", *blockBounds);
-    // field->setParameterObject("block.level", *blockLevel);
-    // field->setParameterObject("block.data", *blockData);
-
-    // logStatus("[import_FLASH] ...done!");
     return model;
   }
 
-  void usage(const std::string &error)
-  {
-    std::cout << "Error: " << error << "\n\n";
-    std::cout << "Usage: ./flash2tamr inFileName.silcc -o outfile.tamr" << std::endl;
-    exit(1);
-  }
-  
-} // namespace tinyAMR
+} // ::tamr
 
-int main(int ac, char **av)
-{
-  using namespace tamr;
-    
-  std::string inFileName;
-  std::string outFileName;
-  for (int i=1;i<ac;i++) {
-    const std::string arg = av[i];
-    if (arg[0] != '-')
-      inFileName = arg;
-    else if (arg == "-o") {
-      outFileName = av[++i];
-    } else
-      usage("flash2tamr: unknown cmdline arg '"+arg+"'");
-  }
-    
-  if (inFileName.empty()) usage("no input file specified");
-  if (outFileName.empty()) usage("no output file specified");
-
-  Model::SP model = import_FLASH(inFileName.c_str());
-  std::cout << "done reading, saving to " << outFileName << std::endl;
-  model->save(outFileName);
-  return 0;
-}
-  
