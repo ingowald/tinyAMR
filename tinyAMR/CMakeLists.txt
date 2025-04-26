@@ -1,6 +1,6 @@
 add_library(tinyAMR STATIC
-  TinyAMR.cpp
-  TinyAMR.cpp
+  Model.h
+  Model.cpp
 )
 target_include_directories(tinyAMR PUBLIC
   ${PROJECT_SOURCE_DIR}
