@@ -20,8 +20,8 @@ namespace tamr {
 
 #define MAX_STRING_LENGTH 80
 
-  using BlockBounds = std::array<int, 6>;
-  struct BlockData
+  using GridBounds = std::array<int, 6>;
+  struct GridData
   {
     int dims[3];
     std::vector<float> values;
@@ -30,9 +30,9 @@ namespace tamr {
   struct AMRField
   {
     std::vector<float> cellWidth;
-    std::vector<int> blockLevel;
-    std::vector<BlockBounds> blockBounds;
-    std::vector<BlockData> blockData;
+    std::vector<int> gridLevel;
+    std::vector<GridBounds> gridBounds;
+    std::vector<GridData> gridData;
     struct
     {
       float x, y;
@@ -79,14 +79,14 @@ namespace tamr {
     std::vector<int> node_type; // node_type 1 ==> leaf
     std::vector<gid_t> gid;
     std::vector<vec3d> coordinates;
-    std::vector<vec3d> block_size;
+    std::vector<vec3d> grid_size;
     std::vector<aabbd> bnd_box;
     std::vector<int> which_child;
   };
 
   struct variable_t
   {
-    size_t global_num_blocks;
+    size_t global_num_grids;
     size_t nxb;
     size_t nyb;
     size_t nzb;
@@ -177,15 +177,15 @@ namespace tamr {
     }
 
     {
-      dataset = file.openDataSet("block size");
+      dataset = file.openDataSet("grid size");
       dataspace = dataset.getSpace();
 
       hsize_t dims[2];
       dataspace.getSimpleExtentDims(dims);
-      dest.block_size.resize(dims[0]);
+      dest.grid_size.resize(dims[0]);
       assert(dims[1] == 3);
 
-      dataset.read(dest.block_size.data(),
+      dataset.read(dest.grid_size.data(),
                    H5::PredType::NATIVE_DOUBLE,
                    dataspace,
                    dataspace);
@@ -236,7 +236,7 @@ namespace tamr {
 
     hsize_t dims[4];
     dataspace.getSimpleExtentDims(dims);
-    var.global_num_blocks = dims[0];
+    var.global_num_grids = dims[0];
     var.nxb = dims[1];
     var.nyb = dims[2];
     var.nzb = dims[3];
@@ -256,7 +256,7 @@ namespace tamr {
 
     int max_level = 0;
     double len[3];
-    for (size_t i = 0; i < var.global_num_blocks; ++i) {
+    for (size_t i = 0; i < var.global_num_grids; ++i) {
       if (grid.refine_level[i] > max_level) {
         max_level = grid.refine_level[i];
         len[0] = grid.bnd_box[i].max.x - grid.bnd_box[i].min.x;
@@ -284,12 +284,12 @@ namespace tamr {
     float min_scalar = FLT_MAX;
 
     size_t numLeaves = 0;
-    for (size_t i = 0; i < var.global_num_blocks; ++i) {
+    for (size_t i = 0; i < var.global_num_grids; ++i) {
       if (grid.node_type[i] == 1)
         numLeaves++;
     }
 
-    for (size_t i = 0; i < var.global_num_blocks; ++i) {
+    for (size_t i = 0; i < var.global_num_grids; ++i) {
       // Project min on vox grid
       int level = max_level - grid.refine_level[i];
       int cellsize = 1 << level;
@@ -302,14 +302,14 @@ namespace tamr {
         static_cast<int>(round((grid.bnd_box[i].min.z - grid.bnd_box[0].min.z)
                                / len_total[2] * vox[2]))};
 
-      BlockBounds bounds = {{lower[0] / cellsize,
+      GridBounds bounds = {{lower[0] / cellsize,
                                lower[1] / cellsize,
                                lower[2] / cellsize,
                                int(lower[0] / cellsize + var.nxb - 1),
                                int(lower[1] / cellsize + var.nyb - 1),
                                int(lower[2] / cellsize + var.nzb - 1)}};
 
-      BlockData data;
+      GridData data;
       data.dims[0] = var.nxb;
       data.dims[1] = var.nyb;
       data.dims[2] = var.nzb;
@@ -328,9 +328,9 @@ namespace tamr {
         }
       }
 
-      result.blockLevel.push_back(level);
-      result.blockBounds.push_back(bounds);
-      result.blockData.push_back(data);
+      result.gridLevel.push_back(level);
+      result.gridBounds.push_back(bounds);
+      result.gridData.push_back(data);
       result.voxelRange = {min_scalar, max_scalar};
     }
 
@@ -417,41 +417,41 @@ namespace tamr {
     model->fieldMetas.resize(1);
     model->fieldMetas[0].name = fieldName;
     
-    int numBlocks = data.blockLevel.size();
-    assert(numBlocks == data.cellWidth.size());
-    assert(numBlocks == data.blockData.size());
+    int numGrids = data.gridLevel.size();
+    assert(numGrids == data.cellWidth.size());
+    assert(numGrids == data.gridData.size());
     std::map<float,int> cellWidthToLevelID;
-    for (int bid=0;bid<numBlocks;bid++) {
-      Model::Block block;
+    for (int bid=0;bid<numGrids;bid++) {
+      model->numCellsAcrossAllGrids = 0;
+      Model::Grid grid;
 
-      box3i coords = (const box3i &)data.blockBounds[bid];
-      vec3i dims = (const vec3i &)data.blockData[bid].dims;
+      box3i coords = (const box3i &)data.gridBounds[bid];
+      vec3i dims = (const vec3i &)data.gridData[bid].dims;
+      
       // coords.size() is one less than dims
-      block.dims = dims;
-      block.level = data.blockLevel[bid];
-      block.origin = coords.lower;
-      block.offset = model->scalars.size();
-      for (auto scalar : data.blockData[bid].values)
+      grid.dims = dims;
+      grid.level = data.gridLevel[bid];
+      grid.origin = coords.lower;
+      grid.offset = model->scalars.size();
+      model->numCellsAcrossAllGrids += data.gridData[bid].values.size();
+      for (auto scalar : data.gridData[bid].values)
         model->scalars.push_back(scalar);
-      float cellWidth = data.cellWidth[block.level];//bid];
+      float cellWidth = data.cellWidth[grid.level];//bid];
       if (cellWidthToLevelID.find(cellWidth) == cellWidthToLevelID.end()) {
-        PING; PRINT(cellWidth);
         int refine = int(log2(1.f/cellWidth));
-        PRINT(refine);
         
         cellWidthToLevelID[cellWidth] = model->refinementOfLevel.size();
         model->refinementOfLevel.push_back(refine);
       }
-      block.level = cellWidthToLevelID[cellWidth];
+      grid.level = cellWidthToLevelID[cellWidth];
 
-      model->blocks.push_back(block);
+      model->grids.push_back(grid);
     }
     // now fix the refinement levels; flash importer stolen from tsd
     // adjusts to FINEST level having width 1, not coarsest.
     int minRef = 0;
     for (auto &rol : model->refinementOfLevel)
       minRef = std::min(minRef,rol);
-    PRINT(minRef);
     for (auto &rol : model->refinementOfLevel)
       rol = rol - minRef;
       

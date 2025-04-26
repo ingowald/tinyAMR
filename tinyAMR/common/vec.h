@@ -560,13 +560,14 @@ namespace tamr {
 
 #define _define_binary_functor(fct)                                     \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,1> fct(const vec_t<T,1> &a, const vec_t<T,1> &b) \
+    inline __tamr_both                                                  \
+    vec_t<T,1> fct(const vec_t<T,1> &a, const vec_t<T,1> &b)            \
     {                                                                   \
       return vec_t<T,1>(fct(a.x,b.x));                                  \
     }                                                                   \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both                                                     \
+    inline __tamr_both                                                  \
     vec_t<T,2> fct(const vec_t<T,2> &a, const vec_t<T,2> &b)            \
     {                                                                   \
       return vec_t<T,2>(fct(a.x,b.x),                                   \
@@ -574,16 +575,16 @@ namespace tamr {
     }                                                                   \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both                                                     \
+    inline __tamr_both                                                  \
     vec_t<T,3> fct(const vec_t<T,3> &a, const vec_t<T,3> &b)            \
     {                                                                   \
-      return vec_t<T,3>(fct(a.x,b.x),                                  \
+      return vec_t<T,3>(fct(a.x,b.x),                                   \
                         fct(a.y,b.y),                                   \
                         fct(a.z,b.z));                                  \
     }                                                                   \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both                                                     \
+    inline __tamr_both                                                  \
     vec_t<T,4> fct(const vec_t<T,4> &a, const vec_t<T,4> &b)            \
     {                                                                   \
       return vec_t<T,4>(fct(a.x,b.x),                                   \
@@ -609,47 +610,51 @@ namespace tamr {
 #define _define_operator(op)                                            \
     /* vec op vec */                                                    \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,2> operator op(const vec_t<T,2> &a,         \
-                                           const vec_t<T,2> &b)         \
+    inline __tamr_both vec_t<T,2> operator op(const vec_t<T,2> &a,      \
+                                              const vec_t<T,2> &b)      \
     { return vec_t<T,2>(a.x op b.x, a.y op b.y); }                      \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,3> operator op(const vec_t<T,3> &a,         \
-                                           const vec_t<T,3> &b)         \
+    inline __tamr_both vec_t<T,3> operator op(const vec_t<T,3> &a,      \
+                                              const vec_t<T,3> &b)      \
     { return vec_t<T,3>(a.x op b.x, a.y op b.y, a.z op b.z); }          \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,4> operator op(const vec_t<T,4> &a,         \
-                                           const vec_t<T,4> &b)         \
+    inline __tamr_both vec_t<T,4> operator op(const vec_t<T,4> &a,      \
+                                              const vec_t<T,4> &b)      \
     { return vec_t<T,4>(a.x op b.x,a.y op b.y,a.z op b.z,a.w op b.w); } \
                                                                         \
     /* vec op scalar */                                                 \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,2> operator op(const vec_t<T,2> &a,         \
-                                           const T &b)                  \
+    inline __tamr_both vec_t<T,2> operator op(const vec_t<T,2> &a,      \
+                                              const T &b)               \
     { return vec_t<T,2>(a.x op b, a.y op b); }                          \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,4> operator op(const vec_t<T,4> &a,         \
-                                           const T &b)                  \
+    inline __tamr_both vec_t<T,3> operator op(const vec_t<T,3> &a,      \
+                                              const T &b)               \
+    { return vec_t<T,3>(a.x op b, a.y op b, a.z op b); }                \
+                                                                        \
+    template<typename T>                                                \
+    inline __tamr_both vec_t<T,4> operator op(const vec_t<T,4> &a,      \
+                                              const T &b)               \
     { return vec_t<T,4>(a.x op b, a.y op b, a.z op b, a.w op b); }      \
                                                                         \
     /* scalar op vec */                                                 \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,2> operator op(const T &a,                  \
-                                           const vec_t<T,2> &b)         \
+    inline __tamr_both vec_t<T,2> operator op(const T &a,               \
+                                              const vec_t<T,2> &b)      \
     { return vec_t<T,2>(a op b.x, a op b.y); }                          \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,3> operator op(const T &a,                  \
-                                           const vec_t<T,3> &b)         \
+    inline __tamr_both vec_t<T,3> operator op(const T &a,               \
+                                              const vec_t<T,3> &b)      \
     { return vec_t<T,3>(a op b.x, a op b.y, a op b.z); }                \
                                                                         \
     template<typename T>                                                \
-    inline __tamr_both vec_t<T,4> operator op(const T &a,                  \
-                                           const vec_t<T,4> &b)         \
+    inline __tamr_both vec_t<T,4> operator op(const T &a,               \
+                                              const vec_t<T,4> &b)      \
     { return vec_t<T,4>(a op b.x, a op b.y, a op b.z, a op b.w); }      \
-                                                                        \
                                                                         \
     
     _define_operator(*);

@@ -24,21 +24,21 @@ int main(int ac, char **av)
   if (inFileName.empty()) usage("no input file specified");
 
   tamr::Model::SP model = tamr::Model::load(inFileName);
-  std::cout << "num blocks  " << prettyNumber(model->blocks.size()) << std::endl;
+  std::cout << "num grids   " << prettyNumber(model->grids.size()) << std::endl;
   std::cout << "num scalars " << prettyNumber(model->scalars.size()) << std::endl;
   std::cout << "num fields  " << prettyNumber(model->fieldMetas.size()) << std::endl;
   for (auto &meta : model->fieldMetas)
-    std::cout << " - " << meta.name << " at offset "
+    std::cout << " - '" << meta.name << "' with array offset "
               << prettyNumber(meta.offset) << std::endl;
   std::cout << "num different levels used " << model->refinementOfLevel.size() << std::endl;
   for (int i=0;i<model->refinementOfLevel.size();i++) {
     vec3i dims;
     box3i bounds;
-    for (auto &block : model->blocks)
-      if (block.level == i) {
-        dims = block.dims;
-        bounds.extend(block.origin);
-        bounds.extend(block.origin+dims-vec3i(1));
+    for (auto &grid : model->grids)
+      if (grid.level == i) {
+        dims = grid.dims;
+        bounds.extend(grid.origin);
+        bounds.extend(grid.origin+dims-vec3i(1));
       }
     std::cout << " - level[" << i << "] : " << std::endl;
     std::cout << "   - refinement is "

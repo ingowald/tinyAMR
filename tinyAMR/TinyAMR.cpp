@@ -46,7 +46,8 @@ namespace tamr {
 
     writeVector(out,refinementOfLevel);
     writeVector(out,scalars);
-    writeVector(out,blocks);
+    writeVector(out,grids);
+    write(out,numCellsAcrossAllGrids);
     write(out,(int)fieldMetas.size());
     for (auto &meta : fieldMetas) {
       writeString(out,meta.name);
@@ -68,7 +69,8 @@ namespace tamr {
 
     readVector(in,model->refinementOfLevel);
     readVector(in,model->scalars);
-    readVector(in,model->blocks);
+    readVector(in,model->grids);
+    model->numCellsAcrossAllGrids = read<size_t>(in);
     model->fieldMetas.resize(read<int>(in));
     for (auto &meta : model->fieldMetas) {
       meta.name = readString(in);
