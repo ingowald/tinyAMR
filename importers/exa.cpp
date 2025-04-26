@@ -72,7 +72,7 @@ namespace tamr {
       int   level  = pair.first.second;
       Model::Grid grid;
       
-      grid.origin = origin;
+      grid.origin = origin * vec3i(BS);
       grid.level  = level;
       grid.dims   = vec3i(BS);
       grid.user   = 0;
@@ -83,8 +83,9 @@ namespace tamr {
       gridIDOfGridCoord[pair.first] = model->grids.size();
       model->grids.push_back(grid);
     }
+    
     model->numCellsAcrossAllGrids = offset;
-
+    cellOffsets.clear();
     for (int cellID = 0;cellID<cells.size();cellID++) {
       auto cell = cells[cellID];
       int gridID = gridIDOfGridCoord[cell.gridCoords<BS>()];
@@ -98,22 +99,24 @@ namespace tamr {
       assert(local.z < BS);
       int ofsInGrid = local.x+BS*local.y+BS*BS*local.z;
       size_t globalOfs = grid.offset+ofsInGrid;
-      assert(cellOffsets[cellID] == 0);
-      cellOffsets[cellID] = globalOfs;
+      assert(globalOfs >= 0);
+      assert(globalOfs < cells.size());
+      cellOffsets.push_back(globalOfs);//[cellID] = globalOfs;
     }
-    
     return model;
   }
   
   Model::SP makeGrids(const std::vector<Cell> &cells,
                       std::vector<int> &cellOffsets)
   {
+#if 0
     try {
       return makeGridsT<16>(cells,cellOffsets);
     } catch (...) {};
     try {
       return makeGridsT<8>(cells,cellOffsets);
     } catch (...) {};
+#endif
     try {
       return makeGridsT<4>(cells,cellOffsets);
     } catch (...) {};
@@ -169,9 +172,13 @@ namespace tamr {
       std::vector<float> fromFile = wholeFile::readVector<float>(fn);
       assert(fromFile.size() == model->numCellsAcrossAllGrids);
 
+      if (fromFile.size() != cellOffsets.size())
+        throw std::runtime_error("mismatch of scalars count and cell count");
       std::vector<float> reordered(fromFile.size());
-      for (int i=0;i<fromFile.size();i++)
-        reordered[cellOffsets[i]] = fromFile[i];
+      for (int i=0;i<fromFile.size();i++) {
+        int co = cellOffsets[i];
+        reordered[co] = fromFile[i];
+      }
       for (auto s : reordered)
         model->scalars.push_back(s);
     }
