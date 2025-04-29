@@ -172,7 +172,7 @@ namespace tamr {
     std::vector<int> cellOffsets;
     Model::SP model = makeGrids(cells,cellOffsets);
     for (int i=0;i<=maxLevel;i++)
-      model->refinementOfLevel.push_back((1<<maxLevel));
+      model->refinementOfLevel.push_back((1<<i));
 
     for (auto fn : scalarsFileNames) {
       Model::FieldMeta field;

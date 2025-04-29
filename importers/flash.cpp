@@ -190,7 +190,7 @@ namespace tamr {
     }
 
     {
-      dataset = file.openDataSet("grid size");
+      dataset = file.openDataSet("block size");
       dataspace = dataset.getSpace();
 
       hsize_t dims[2];
