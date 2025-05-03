@@ -122,14 +122,12 @@ namespace tamr {
   Model::SP makeGrids(const std::vector<Cell> &cells,
                       std::vector<int> &cellOffsets)
   {
-#if 0
     try {
       return makeGridsT<16>(cells,cellOffsets);
     } catch (...) {};
     try {
       return makeGridsT<8>(cells,cellOffsets);
     } catch (...) {};
-#endif
     try {
       return makeGridsT<4>(cells,cellOffsets);
     } catch (...) {};
@@ -155,7 +153,7 @@ namespace tamr {
     std::vector<Cell> cells = wholeFile::readVector<Cell>(cellFileName);
     int maxLevel = 0;
     box3i bounds;
-    for (auto cell : cells) {
+    for (auto &cell : cells) {
       maxLevel = std::max(maxLevel,cell.level);
       bounds.extend(cell.coord);
       bounds.extend(cell.coord+(1<<cell.level));
@@ -174,6 +172,39 @@ namespace tamr {
     for (int i=0;i<=maxLevel;i++)
       model->refinementOfLevel.push_back((1<<i));
 
+#if 1
+    if (scalarsFileNames.size() == 3) {
+      std::cout << "seeing 3 scalars here ... computing vector norm of them" << std::endl;
+      Model::FieldMeta field;
+      field.offset = model->scalars.size();
+      field.numDimensions = 1;
+      field.name = scalarsFileNames[0];
+      model->fieldMetas.push_back(field);
+      
+      std::vector<float> fromFile_x = wholeFile::readVector<float>(scalarsFileNames[0]);
+      std::vector<float> fromFile_y = wholeFile::readVector<float>(scalarsFileNames[1]);
+      std::vector<float> fromFile_z = wholeFile::readVector<float>(scalarsFileNames[2]);
+      std::vector<float> fromFile(fromFile_x.size());
+      for (int i=0;i<fromFile.size();i++) {
+        float x = fromFile_x[i];
+        float y = fromFile_x[y];
+        float z = fromFile_x[z];
+        fromFile[i] = sqrtf(x*x+y*y+z*z);
+      }
+             
+      assert(fromFile.size() == model->numCellsAcrossAllGrids);
+
+      if (fromFile.size() != cellOffsets.size())
+        throw std::runtime_error("mismatch of scalars count and cell count");
+      std::vector<float> reordered(fromFile.size());
+      for (int i=0;i<fromFile.size();i++) {
+        int co = cellOffsets[i];
+        reordered[co] = fromFile[i];
+      }
+      for (auto s : reordered)
+        model->scalars.push_back(s);
+    } else
+#endif
     for (auto fn : scalarsFileNames) {
       Model::FieldMeta field;
       field.offset = model->scalars.size();

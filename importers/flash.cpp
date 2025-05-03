@@ -42,7 +42,8 @@ namespace tamr {
   
   struct AMRField
   {
-    std::vector<float> cellWidth;
+    // std::vector<float> cellWidth;
+    std::vector<int> refinementOfLevel;
     std::vector<int> gridLevel;
     std::vector<GridBounds> gridBounds;
     std::vector<GridData> gridData;
@@ -258,7 +259,8 @@ namespace tamr {
                  var.data.data(), H5::PredType::NATIVE_DOUBLE, dataspace, dataspace);
   }
 
-  inline AMRField toAMRField(const grid_t &grid, const variable_t &var)
+  inline AMRField toAMRField(const grid_t &grid,
+                             const variable_t &var)
   {
     AMRField result;
 
@@ -269,18 +271,43 @@ namespace tamr {
 
     int max_level = 0;
     double len[3];
+    std::map<int,float> cellWidthOf;
     for (size_t i = 0; i < var.global_num_grids; ++i) {
-      if (grid.refine_level[i] > max_level) {
-        max_level = grid.refine_level[i];
+      if (cellWidthOf.find(grid.refine_level[i]) == cellWidthOf.end()) {
         len[0] = grid.bnd_box[i].max.x - grid.bnd_box[i].min.x;
-        len[1] = grid.bnd_box[i].max.y - grid.bnd_box[i].min.y;
-        len[2] = grid.bnd_box[i].max.z - grid.bnd_box[i].min.z;
+        cellWidthOf[grid.refine_level[i]] = len[0] / var.nxb;
+        max_level = std::max(max_level,grid.refine_level[i]);
       }
+        
+      // if (grid.refine_level[i] > max_level) {
+      //   max_level = grid.refine_level[i];
+      //   len[0] = grid.bnd_box[i].max.x - grid.bnd_box[i].min.x;
+      //   len[1] = grid.bnd_box[i].max.y - grid.bnd_box[i].min.y;
+      //   len[2] = grid.bnd_box[i].max.z - grid.bnd_box[i].min.z;
+      //   PRINT(grid.bnd_box[i].min.x);
+      //   PRINT(grid.bnd_box[i].max.x);
+      //   PRINT(len[0]);
+      //   PRINT(var.nxb);
+      //   PRINT(grid.refine_level[i]);
+      //   cellWidthOf[grid.refine_level[i]] = len[0] / var.nxb;
+      // }
     }
+
+    float minCW = INFINITY;
+    for (auto p : cellWidthOf) {
+      minCW = std::min(minCW,p.second);
+    }
+    // for (auto p : cellWidthOf) {
+    //   PRINT(p.first);
+    //   PRINT(p.second);
+    //   PRINT(p.second/minCW);
+    // }
 
     // --- cellWidth
     for (int l = 0; l <= max_level; ++l) {
-      result.cellWidth.push_back(1 << l);
+      // result.cellWidth.push_back(1 << l);
+      int refine = int(cellWidthOf[l]/minCW + .5f);
+      result.refinementOfLevel.push_back(refine);
     }
 
     len[0] /= var.nxb;
@@ -303,10 +330,16 @@ namespace tamr {
     }
 
     for (size_t i = 0; i < var.global_num_grids; ++i) {
-      // Project min on vox grid
+      // Project min on p grix grid
       int level = max_level - grid.refine_level[i];
       int cellsize = 1 << level;
 
+// #if 1
+//       if (level >= result.cellWidth.size()) {
+//         result.cellWidth.resize(level+1);
+//       }
+//       result.cellWidth[level] = cellsize;
+// #endif
       int lower[3] = {
         static_cast<int>(round((grid.bnd_box[i].min.x - grid.bnd_box[0].min.x)
                                / len_total[0] * vox[0])),
@@ -314,14 +347,14 @@ namespace tamr {
                                / len_total[1] * vox[1])),
         static_cast<int>(round((grid.bnd_box[i].min.z - grid.bnd_box[0].min.z)
                                / len_total[2] * vox[2]))};
-
+      
       GridBounds bounds = {{lower[0] / cellsize,
-                               lower[1] / cellsize,
-                               lower[2] / cellsize,
-                               int(lower[0] / cellsize + var.nxb - 1),
-                               int(lower[1] / cellsize + var.nyb - 1),
-                               int(lower[2] / cellsize + var.nzb - 1)}};
-
+                              lower[1] / cellsize,
+                              lower[2] / cellsize,
+                              int(lower[0] / cellsize + var.nxb - 1),
+                              int(lower[1] / cellsize + var.nyb - 1),
+                              int(lower[2] / cellsize + var.nzb - 1)}};
+      
       GridData data;
       data.dims[0] = var.nxb;
       data.dims[1] = var.nyb;
@@ -433,9 +466,13 @@ namespace tamr {
     int numGrids = data.gridLevel.size();
     assert(numGrids == data.cellWidth.size());
     assert(numGrids == data.gridData.size());
-    std::map<float,int> cellWidthToLevelID;
+    // std::map<float,int> cellWidthToLevelID;
+    model->numCellsAcrossAllGrids = 0;
+    // float maxCellWidth = 0.f;
+    // for (auto cw : data.cellWidth)
+    //   maxCellWidth = std::max(maxCellWidth,cw);
+    // PRINT(maxCellWidth);
     for (int bid=0;bid<numGrids;bid++) {
-      model->numCellsAcrossAllGrids = 0;
       Model::Grid grid;
 
       box3i coords = (const box3i &)data.gridBounds[bid];
@@ -446,27 +483,30 @@ namespace tamr {
       grid.level = data.gridLevel[bid];
       grid.origin = coords.lower;
       grid.offset = model->scalars.size();
-      model->numCellsAcrossAllGrids += data.gridData[bid].values.size();
+      model->numCellsAcrossAllGrids += dims.x*dims.y*dims.z;
       for (auto scalar : data.gridData[bid].values)
         model->scalars.push_back(scalar);
-      float cellWidth = data.cellWidth[grid.level];//bid];
-      if (cellWidthToLevelID.find(cellWidth) == cellWidthToLevelID.end()) {
-        int refine = int(log2(1.f/cellWidth));
+      // float cellWidth = data.cellWidth[grid.level];//bid];
+      // if (cellWidthToLevelID.find(cellWidth) == cellWidthToLevelID.end()) {
+      //   int refine = int(maxCellWidth/cellWidth);
+      //   // int refine = int(log2(1.f/cellWidth));
         
-        cellWidthToLevelID[cellWidth] = model->refinementOfLevel.size();
-        model->refinementOfLevel.push_back(refine);
-      }
-      grid.level = cellWidthToLevelID[cellWidth];
+      //   std::cout << "cell width " << cellWidth << " -> " << refine << std::endl;
+        
+      //   cellWidthToLevelID[cellWidth] = model->refinementOfLevel.size();
+      //   model->refinementOfLevel.push_back(refine);
+      // }
 
       model->grids.push_back(grid);
     }
+    model->refinementOfLevel = data.refinementOfLevel;
     // now fix the refinement levels; flash importer stolen from tsd
     // adjusts to FINEST level having width 1, not coarsest.
-    int minRef = 0;
-    for (auto &rol : model->refinementOfLevel)
-      minRef = std::min(minRef,rol);
-    for (auto &rol : model->refinementOfLevel)
-      rol = rol - minRef;
+    // int minRef = 0;
+    // for (auto &rol : model->refinementOfLevel)
+    //   minRef = std::min(minRef,rol);
+    // for (auto &rol : model->refinementOfLevel)
+    //   rol = rol - minRef;
       
     return model;
   }
