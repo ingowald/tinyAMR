@@ -536,6 +536,13 @@ namespace tamr {
       // logStatus("[import_FLASH] converting to AMRField...");
       //return toAMRField(grid, currentField);
       importFlash(model,reader.grid,currentField);
+
+      model->fieldMetas.resize(1);
+      model->fieldMetas[0].name = fieldName;
+
+      model->scalars.resize(currentField.data.size());
+      for (int i=0;i<currentField.data.size();i++)
+        model->scalars[i] = currentField.data[i];
       return model;
     } catch (H5::DataSpaceIException error) {
       error.printErrorStack();
