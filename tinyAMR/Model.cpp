@@ -18,7 +18,7 @@
 #include <fstream>
 
 namespace tamr {
-  const size_t magic = 0x66554465ABABull;
+  const size_t magic = 0x665674465ABABull;
 
   template<typename T> void write(std::ostream &out, const T &scalar)
   { out.write((char*)&scalar,sizeof(scalar)); }
@@ -71,6 +71,8 @@ namespace tamr {
       writeString(out,meta.info);
     }
     writeString(out,userMeta);
+    write(out,this->gridOrigin);
+    write(out,this->gridOffset);
   }
 
   Model::SP Model::load(const std::string &fileName)
@@ -94,7 +96,8 @@ namespace tamr {
       meta.info = readString(in);
     }
     model->userMeta = readString(in);
-    
+    model->gridOrigin = read<vec3f>(in);
+    model->gridOffset = read<vec3f>(in);
     
     return model;
   }

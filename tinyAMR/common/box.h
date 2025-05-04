@@ -65,6 +65,17 @@ namespace tamr {
     { return int8_t(SCHAR_MIN); }
     template<> inline __tamr_both int8_t empty_bounds_upper<int8_t>() 
     { return int8_t(SCHAR_MAX); }
+
+    template<> inline __tamr_both float empty_bounds_lower<float>() 
+    { return +std::numeric_limits<float>::infinity(); }
+    template<> inline __tamr_both float empty_bounds_upper<float>() 
+    { return -std::numeric_limits<float>::infinity(); }
+
+    template<> inline __tamr_both double empty_bounds_lower<double>() 
+    { return +std::numeric_limits<double>::infinity(); }
+    template<> inline __tamr_both double empty_bounds_upper<double>() 
+    { return -std::numeric_limits<double>::infinity(); }
+
     
     template<typename T>
     struct interval {

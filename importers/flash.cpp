@@ -40,18 +40,18 @@ namespace tamr {
     std::vector<float> values;
   };
   
-  struct AMRField
-  {
-    // std::vector<float> cellWidth;
-    std::vector<int> refinementOfLevel;
-    std::vector<int> gridLevel;
-    std::vector<GridBounds> gridBounds;
-    std::vector<GridData> gridData;
-    struct
-    {
-      float x, y;
-    } voxelRange;
-  };
+  // struct AMRField
+  // {
+  //   // std::vector<float> cellWidth;
+  //   std::vector<int> refinementOfLevel;
+  //   std::vector<int> gridLevel;
+  //   std::vector<GridBounds> gridBounds;
+  //   std::vector<GridData> gridData;
+  //   struct
+  //   {
+  //     float x, y;
+  //   } voxelRange;
+  // };
 
   struct sim_info_t
   {
@@ -71,15 +71,16 @@ namespace tamr {
   struct grid_t
   {
     using char4 = std::array<char, 4>;
-    struct __attribute__((packed)) vec3d
-    {
-      double x, y, z;
-    };
+    // struct __attribute__((packed)) vec3d
+    // {
+    //   double x, y, z;
+    // };
 
-    struct aabbd
-    {
-      vec3d min, max;
-    };
+    typedef box3d aabbd;
+    // struct aabbd
+    // {
+    //   vec3d min, max;
+    // };
 
     struct __attribute__((packed)) gid_t
     {
@@ -222,12 +223,12 @@ namespace tamr {
 
       dest.bnd_box.resize(dims[0]);
       for (size_t i = 0; i < dims[0]; ++i) {
-        dest.bnd_box[i].min.x = temp[i * 6];
-        dest.bnd_box[i].max.x = temp[i * 6 + 1];
-        dest.bnd_box[i].min.y = temp[i * 6 + 2];
-        dest.bnd_box[i].max.y = temp[i * 6 + 3];
-        dest.bnd_box[i].min.z = temp[i * 6 + 4];
-        dest.bnd_box[i].max.z = temp[i * 6 + 5];
+        dest.bnd_box[i].lower.x = temp[i * 6];
+        dest.bnd_box[i].upper.x = temp[i * 6 + 1];
+        dest.bnd_box[i].lower.y = temp[i * 6 + 2];
+        dest.bnd_box[i].upper.y = temp[i * 6 + 3];
+        dest.bnd_box[i].lower.z = temp[i * 6 + 4];
+        dest.bnd_box[i].upper.z = temp[i * 6 + 5];
       }
     }
 
@@ -242,8 +243,7 @@ namespace tamr {
     }
   }
 
-  inline void read_variable(
-                            variable_t &var, H5::H5File const &file, char const *varname)
+  inline void read_variable(variable_t &var, H5::H5File const &file, char const *varname)
   {
     H5::DataSet dataset = file.openDataSet(varname);
     H5::DataSpace dataspace = dataset.getSpace();
@@ -254,38 +254,41 @@ namespace tamr {
     var.nxb = dims[1];
     var.nyb = dims[2];
     var.nzb = dims[3];
-    var.data.resize(dims[0] * dims[1] * dims[2] * dims[3]);
-    dataset.read(
-                 var.data.data(), H5::PredType::NATIVE_DOUBLE, dataspace, dataspace);
+    var.data.resize(dims[0] * (size_t)dims[1] * dims[2] * dims[3]);
+    dataset.read(var.data.data(),
+                 H5::PredType::NATIVE_DOUBLE,
+                 dataspace,
+                 dataspace);
   }
 
+#if 0
   inline AMRField toAMRField(const grid_t &grid,
                              const variable_t &var)
   {
     AMRField result;
 
     // Length of the sides of the bounding box
-    double len_total[3] = {grid.bnd_box[0].max.x - grid.bnd_box[0].min.x,
-                           grid.bnd_box[0].max.y - grid.bnd_box[0].min.y,
-                           grid.bnd_box[0].max.z - grid.bnd_box[0].min.z};
+    double len_total[3] = {grid.bnd_box[0].upper.x - grid.bnd_box[0].lower.x,
+                           grid.bnd_box[0].upper.y - grid.bnd_box[0].lower.y,
+                           grid.bnd_box[0].upper.z - grid.bnd_box[0].lower.z};
 
     int max_level = 0;
     double len[3];
     std::map<int,float> cellWidthOf;
     for (size_t i = 0; i < var.global_num_grids; ++i) {
       if (cellWidthOf.find(grid.refine_level[i]) == cellWidthOf.end()) {
-        len[0] = grid.bnd_box[i].max.x - grid.bnd_box[i].min.x;
+        len[0] = grid.bnd_box[i].upper.x - grid.bnd_box[i].lower.x;
         cellWidthOf[grid.refine_level[i]] = len[0] / var.nxb;
         max_level = std::max(max_level,grid.refine_level[i]);
       }
         
       // if (grid.refine_level[i] > max_level) {
       //   max_level = grid.refine_level[i];
-      //   len[0] = grid.bnd_box[i].max.x - grid.bnd_box[i].min.x;
-      //   len[1] = grid.bnd_box[i].max.y - grid.bnd_box[i].min.y;
-      //   len[2] = grid.bnd_box[i].max.z - grid.bnd_box[i].min.z;
-      //   PRINT(grid.bnd_box[i].min.x);
-      //   PRINT(grid.bnd_box[i].max.x);
+      //   len[0] = grid.bnd_box[i].upper.x - grid.bnd_box[i].lower.x;
+      //   len[1] = grid.bnd_box[i].upper.y - grid.bnd_box[i].lower.y;
+      //   len[2] = grid.bnd_box[i].upper.z - grid.bnd_box[i].lower.z;
+      //   PRINT(grid.bnd_box[i].lower.x);
+      //   PRINT(grid.bnd_box[i].uppery.x);
       //   PRINT(len[0]);
       //   PRINT(var.nxb);
       //   PRINT(grid.refine_level[i]);
@@ -341,11 +344,11 @@ namespace tamr {
 //       result.cellWidth[level] = cellsize;
 // #endif
       int lower[3] = {
-        static_cast<int>(round((grid.bnd_box[i].min.x - grid.bnd_box[0].min.x)
+        static_cast<int>(round((grid.bnd_box[i].lower.x - grid.bnd_box[0].lower.x)
                                / len_total[0] * vox[0])),
-        static_cast<int>(round((grid.bnd_box[i].min.y - grid.bnd_box[0].min.y)
+        static_cast<int>(round((grid.bnd_box[i].lower.y - grid.bnd_box[0].lower.y)
                                / len_total[1] * vox[1])),
-        static_cast<int>(round((grid.bnd_box[i].min.z - grid.bnd_box[0].min.z)
+        static_cast<int>(round((grid.bnd_box[i].lower.z - grid.bnd_box[0].lower.z)
                                / len_total[2] * vox[2]))};
       
       GridBounds bounds = {{lower[0] / cellsize,
@@ -384,7 +387,8 @@ namespace tamr {
 
     return result;
   }
-
+#endif
+  
   struct FlashReader
   {
     bool open(const char *fileName)
@@ -416,37 +420,97 @@ namespace tamr {
       return true;
     }
 
-    AMRField getField(int index, std::string &fieldName)
-    {
-      try {
-        // logStatus(
-        //           "[import_FLASH] reading field '%s'...", fieldNames[index].c_str());
-        fieldName = fieldNames[index].c_str();
-        printf("[import_FLASH] reading field '%s'...", fieldName.c_str());
-        read_variable(currentField, file, fieldName.c_str());
-        // logStatus("[import_FLASH] converting to AMRField...");
-        return toAMRField(grid, currentField);
-      } catch (H5::DataSpaceIException error) {
-        error.printErrorStack();
-        exit(EXIT_FAILURE);
-      } catch (H5::DataTypeIException error) {
-        error.printErrorStack();
-        exit(EXIT_FAILURE);
-      }
+    // AMRField getField(int index, std::string &fieldName)
+    // {
+    //   try {
+    //     // logStatus(
+    //     //           "[import_FLASH] reading field '%s'...", fieldNames[index].c_str());
+    //     fieldName = fieldNames[index].c_str();
+    //     printf("[import_FLASH] reading field '%s'...", fieldName.c_str());
+    //     read_variable(currentField, file, fieldName.c_str());
+    //     // logStatus("[import_FLASH] converting to AMRField...");
+    //     return toAMRField(grid, currentField);
+    //   } catch (H5::DataSpaceIException error) {
+    //     error.printErrorStack();
+    //     exit(EXIT_FAILURE);
+    //   } catch (H5::DataTypeIException error) {
+    //     error.printErrorStack();
+    //     exit(EXIT_FAILURE);
+    //   }
 
-      return {};
-    }
+    //   return {};
+    // }
 
     H5::H5File file;
     std::vector<std::string> fieldNames;
     grid_t grid;
-    variable_t currentField;
+    // variable_t currentField;
   };
-
+  
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 
+  void importFlash(Model::SP model,
+                   const grid_t &grid,
+                   const variable_t &var
+                   )
+  {
+    PRINT(grid.unknown_names.size());
+    PRINT(grid.refine_level.size());
+    PRINT(grid.node_type.size()); // node_type 1 ==> leaf
+    PRINT(grid.gid.size());
+    PRINT(grid.coordinates.size());
+    PRINT(grid.grid_size.size());
+    PRINT(grid.bnd_box.size());
+    PRINT(grid.which_child.size());
+
+    int numBlocks = grid.coordinates.size();
+    vec3i blockDims = vec3i(var.nxb,var.nyb,var.nzb);
+    PRINT(numBlocks);
+    PRINT(blockDims);
+
+    vec3d minBlockSize(INFINITY);
+    vec3d maxBlockSize(0.);
+    box3d worldBounds;
+    for (int i=0;i<numBlocks;i++) {
+      box3d blockBounds = grid.bnd_box[i];
+      worldBounds.extend(blockBounds);
+      minBlockSize = min(minBlockSize,blockBounds.size());
+      maxBlockSize = max(maxBlockSize,blockBounds.size());
+    }
+    vec3d unitCellSize = maxBlockSize / vec3d(blockDims);
+    vec3i unitGridDims = vec3i(worldBounds.size() / unitCellSize + .5);
+    PRINT(worldBounds);
+    PRINT(unitCellSize);
+    PRINT(unitGridDims);
+      
+    int maxRefine = 1;
+    int maxLevel = 0;
+    for (int i=0;i<numBlocks;i++) {
+      box3d blockBounds = grid.bnd_box[i];
+      vec3d cellSize = blockBounds.size() / vec3d(blockDims);
+      int logRefine = int(.5f+log(unitCellSize.x/cellSize.x));
+      int refine = 1<<logRefine;
+      maxRefine = std::max(maxRefine,refine);
+      maxLevel = std::max(maxLevel,logRefine);
+      // PRINT(refine);
+
+      vec3i origin = vec3i((blockBounds.lower - worldBounds.lower)/cellSize + .5);
+      // PRINT(origin);
+
+      Model::Grid g;
+      g.origin = origin;
+      g.dims   = blockDims;
+      g.level  = logRefine;
+      g.offset = size_t(i)*blockDims.x*blockDims.y*blockDims.z;
+      model->grids.push_back(g);
+    }
+
+    for (int i=0;i<=maxLevel;i++)
+      model->refinementOfLevel.push_back(1<<i);
+  }
+  
   Model::SP import_FLASH(const char *filepath, int fieldIndex)
   {
     FlashReader reader;
@@ -457,58 +521,81 @@ namespace tamr {
     
     Model::SP model = std::make_shared<Model>();
     model->userMeta = filepath;
-
-    std::string fieldName;
-    AMRField data = reader.getField(fieldIndex,fieldName);
-    model->fieldMetas.resize(1);
-    model->fieldMetas[0].name = fieldName;
     
-    int numGrids = data.gridLevel.size();
-    assert(numGrids == data.cellWidth.size());
-    assert(numGrids == data.gridData.size());
-    // std::map<float,int> cellWidthToLevelID;
-    model->numCellsAcrossAllGrids = 0;
-    // float maxCellWidth = 0.f;
-    // for (auto cw : data.cellWidth)
-    //   maxCellWidth = std::max(maxCellWidth,cw);
-    // PRINT(maxCellWidth);
-    for (int bid=0;bid<numGrids;bid++) {
-      Model::Grid grid;
-
-      box3i coords = (const box3i &)data.gridBounds[bid];
-      vec3i dims = (const vec3i &)data.gridData[bid].dims;
+    
+    std::string fieldName;
+    
+    try {
+      variable_t currentField;
       
-      // coords.size() is one less than dims
-      grid.dims = dims;
-      grid.level = data.gridLevel[bid];
-      grid.origin = coords.lower;
-      grid.offset = model->scalars.size();
-      model->numCellsAcrossAllGrids += dims.x*dims.y*dims.z;
-      for (auto scalar : data.gridData[bid].values)
-        model->scalars.push_back(scalar);
-      // float cellWidth = data.cellWidth[grid.level];//bid];
-      // if (cellWidthToLevelID.find(cellWidth) == cellWidthToLevelID.end()) {
-      //   int refine = int(maxCellWidth/cellWidth);
-      //   // int refine = int(log2(1.f/cellWidth));
-        
-      //   std::cout << "cell width " << cellWidth << " -> " << refine << std::endl;
-        
-      //   cellWidthToLevelID[cellWidth] = model->refinementOfLevel.size();
-      //   model->refinementOfLevel.push_back(refine);
-      // }
-
-      model->grids.push_back(grid);
+      // logStatus(
+      //           "[import_FLASH] reading field '%s'...", fieldNames[index].c_str());
+      fieldName = reader.fieldNames[fieldIndex];
+      printf("[import_FLASH] reading field '%s'...", fieldName.c_str());
+      read_variable(currentField, reader.file, fieldName.c_str());
+      // logStatus("[import_FLASH] converting to AMRField...");
+      //return toAMRField(grid, currentField);
+      importFlash(model,reader.grid,currentField);
+      return model;
+    } catch (H5::DataSpaceIException error) {
+      error.printErrorStack();
+      exit(EXIT_FAILURE);
+    } catch (H5::DataTypeIException error) {
+      error.printErrorStack();
+      exit(EXIT_FAILURE);
     }
-    model->refinementOfLevel = data.refinementOfLevel;
-    // now fix the refinement levels; flash importer stolen from tsd
-    // adjusts to FINEST level having width 1, not coarsest.
-    // int minRef = 0;
-    // for (auto &rol : model->refinementOfLevel)
-    //   minRef = std::min(minRef,rol);
-    // for (auto &rol : model->refinementOfLevel)
-    //   rol = rol - minRef;
+
       
-    return model;
+    // AMRField data = reader.getField(fieldIndex,fieldName);
+    // model->fieldMetas.resize(1);
+    // model->fieldMetas[0].name = fieldName;
+    
+    // int numGrids = data.gridLevel.size();
+    // assert(numGrids == data.cellWidth.size());
+    // assert(numGrids == data.gridData.size());
+    // // std::map<float,int> cellWidthToLevelID;
+    // model->numCellsAcrossAllGrids = 0;
+    // // float maxCellWidth = 0.f;
+    // // for (auto cw : data.cellWidth)
+    // //   maxCellWidth = std::max(maxCellWidth,cw);
+    // // PRINT(maxCellWidth);
+    // for (int bid=0;bid<numGrids;bid++) {
+    //   Model::Grid grid;
+
+    //   box3i coords = (const box3i &)data.gridBounds[bid];
+    //   vec3i dims = (const vec3i &)data.gridData[bid].dims;
+      
+    //   // coords.size() is one less than dims
+    //   grid.dims = dims;
+    //   grid.level = data.gridLevel[bid];
+    //   grid.origin = coords.lower;
+    //   grid.offset = model->scalars.size();
+    //   model->numCellsAcrossAllGrids += dims.x*dims.y*dims.z;
+    //   for (auto scalar : data.gridData[bid].values)
+    //     model->scalars.push_back(scalar);
+    //   // float cellWidth = data.cellWidth[grid.level];//bid];
+    //   // if (cellWidthToLevelID.find(cellWidth) == cellWidthToLevelID.end()) {
+    //   //   int refine = int(maxCellWidth/cellWidth);
+    //   //   // int refine = int(log2(1.f/cellWidth));
+        
+    //   //   std::cout << "cell width " << cellWidth << " -> " << refine << std::endl;
+        
+    //   //   cellWidthToLevelID[cellWidth] = model->refinementOfLevel.size();
+    //   //   model->refinementOfLevel.push_back(refine);
+    //   // }
+
+    //   model->grids.push_back(grid);
+    // }
+    // model->refinementOfLevel = data.refinementOfLevel;
+    // // now fix the refinement levels; flash importer stolen from tsd
+    // // adjusts to FINEST level having width 1, not coarsest.
+    // // int minRef = 0;
+    // // for (auto &rol : model->refinementOfLevel)
+    // //   minRef = std::min(minRef,rol);
+    // // for (auto &rol : model->refinementOfLevel)
+    // //   rol = rol - minRef;
+      
+    // return model;
   }
 
 } // ::tamr

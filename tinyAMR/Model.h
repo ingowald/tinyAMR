@@ -103,6 +103,11 @@ namespace tamr {
         library makes no claims at what this field may or may not
         contain */
     std::string userMeta;
+
+
+    vec3f gridOrigin = { 0.f, 0.f, 0.f };
+    vec3f gridOffset = { 1.f, 1.f, 1.f };
+    
   };
   
 } // ::tamr
