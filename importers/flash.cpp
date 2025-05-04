@@ -490,7 +490,7 @@ namespace tamr {
     for (int i=0;i<numBlocks;i++) {
       box3d blockBounds = grid.bnd_box[i];
       vec3d cellSize = blockBounds.size() / vec3d(blockDims);
-      int logRefine = int(.5f+log(unitCellSize.x/cellSize.x));
+      int logRefine = int(.5f+log2(unitCellSize.x/cellSize.x));
       int refine = 1<<logRefine;
       maxRefine = std::max(maxRefine,refine);
       maxLevel = std::max(maxLevel,logRefine);
@@ -540,9 +540,10 @@ namespace tamr {
       model->fieldMetas.resize(1);
       model->fieldMetas[0].name = fieldName;
 
+      model->numCellsAcrossAllGrids = currentField.data.size();
       model->scalars.resize(currentField.data.size());
       for (int i=0;i<currentField.data.size();i++)
-        model->scalars[i] = currentField.data[i];
+        model->scalars[i] = log(currentField.data[i]);
       return model;
     } catch (H5::DataSpaceIException error) {
       error.printErrorStack();
