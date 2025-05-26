@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.22)
 
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
