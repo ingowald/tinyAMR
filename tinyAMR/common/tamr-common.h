@@ -10,9 +10,17 @@
 #include <map>
 #include <vector>
 #include <queue>
+
 #ifdef __GNUC__
 #include <execinfo.h>
 #include <sys/time.h>
+#endif
+
+#ifdef WIN32
+# ifndef NOMINMAX
+#  define NOMINMAX
+# endif
+# include <windows.h>
 #endif
 
 #define NOTIMPLEMENTED throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not implemented")
