@@ -52,7 +52,7 @@ namespace tamr {
 
       /*! assignment operator */
       inline __tamr_both vec_t<T,1> &operator=(const vec_t<T,1> &other) {
-        this->v = other.v;
+        this->x = other.x;
         return *this;
       }
     
