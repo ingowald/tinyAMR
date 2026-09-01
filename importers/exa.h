@@ -21,6 +21,9 @@
 namespace tamr {
 
   Model::SP import_exa(const std::string &cellFileName,
-                       const std::vector<std::string> &scalarsFileName);
+                       const std::vector<std::string> &scalarsFileName,
+                       /*! use this only if the model doesn't already
+                           have inner nodes! */
+                       bool createInnerNodes);
   
 }
