@@ -21,7 +21,6 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
-#include <optional>
 #include <vector>
 #include <stdexcept>
 #include <fstream>
@@ -259,8 +258,8 @@ namespace tamr {
       std::vector<float> fromFile(fromFile_x.size());
       for (int i=0;i<fromFile.size();i++) {
         float x = fromFile_x[i];
-        float y = fromFile_x[y];
-        float z = fromFile_x[z];
+        float y = fromFile_y[i];
+        float z = fromFile_z[i];
         fromFile[i] = sqrtf(x*x+y*y+z*z);
       }
       padWithNANs(fromFile,model->numCellsAcrossAllGrids);

@@ -21,7 +21,6 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
-#include <optional>
 #include <vector>
 #include <stdexcept>
 // hdf5
@@ -82,12 +81,23 @@ namespace tamr {
     //   vec3d min, max;
     // };
 
+#ifdef _MSC_VER
+    #pragma pack(push, 1)
+    struct gid_t
+    {
+      int neighbors[6];
+      int parent;
+      int children[8];
+    };
+    #pragma pack(pop)
+#else
     struct __attribute__((packed)) gid_t
     {
       int neighbors[6];
       int parent;
       int children[8];
     };
+#endif    
 
     std::vector<char4> unknown_names;
     std::vector<int> refine_level;

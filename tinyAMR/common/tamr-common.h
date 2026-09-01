@@ -1,5 +1,27 @@
 #pragma once
 
+#ifndef _USE_MATH_DEFINES
+#  define _USE_MATH_DEFINES
+#endif
+// #include <math.h> // using cmath causes issues under Windows
+
+#include <cstdlib>
+#include <stdio.h>
+#include <iostream>
+#include <stdexcept>
+#include <memory>
+#include <assert.h>
+#include <string>
+#include <math.h>
+// #include <cmath>
+#include <cfloat>
+#include <algorithm>
+#include <sstream>
+#ifdef __GNUC__
+#include <execinfo.h>
+#include <sys/time.h>
+#endif
+
 // std
 #include <sstream>
 #include <string>
@@ -10,10 +32,32 @@
 #include <map>
 #include <vector>
 #include <queue>
+
 #ifdef __GNUC__
 #include <execinfo.h>
 #include <sys/time.h>
 #endif
+
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+# ifndef NOMINMAX
+#  define NOMINMAX
+# endif
+#include <Windows.h>
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+#endif
+
+#if !defined(WIN32)
+#include <signal.h>
+#endif
+
 
 #define NOTIMPLEMENTED throw std::runtime_error(std::string(__PRETTY_FUNCTION__)+" not implemented")
 
