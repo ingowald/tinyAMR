@@ -59,7 +59,9 @@ namespace tamr {
     std::ofstream out(fileName,std::ios::binary);
     out.write((char *)&magic,sizeof(magic));
 
-    writeVector(out,refinementOfLevel);
+    // write an empty vector; that was previously 'refinementOfVector'
+    std::vector<float> refinementOfLevel_alwaysEmpty = {/*EMPTY!!!*/};
+    writeVector(out,refinementOfLevel_alwaysEmpty);
     writeVector(out,scalars);
     writeVector(out,grids);
     write(out,numCellsAcrossAllGrids);
@@ -84,7 +86,10 @@ namespace tamr {
     in.read((char *)&magic,sizeof(magic));
     if (magic != tamr::magic) throw std::runtime_error("wrong magic number");
 
-    readVector(in,model->refinementOfLevel);
+    // as of 1.1.0 this no longer gets stored; old files may still
+    // have it so let's just read it and ignore it if availbale.
+    std::vector<float> refinementOfLevel;
+    readVector(in,refinementOfLevel);
     readVector(in,model->scalars);
     readVector(in,model->grids);
     model->numCellsAcrossAllGrids = read<size_t>(in);

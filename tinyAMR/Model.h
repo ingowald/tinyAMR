@@ -20,6 +20,10 @@
 #include <vector>
 #include <memory>
 
+#define TAMR_VERSION_MAJOR 1
+#define TAMR_VERSION_MINOS 1
+#define TAMR_VERSION_PATCH 0
+
 namespace tamr {
 
   struct Model {
@@ -33,15 +37,14 @@ namespace tamr {
       vec3i    origin;
       
       /*! dimensions of this grid's 3D array of cells. The Nx*Ny*Nz
-          scalars for this grid iwill be stored at
+          scalars for this grid will be stored at
           scalars[grid.offset] in z-major order */
       vec3i    dims;
       
-      /*! level of this grid, *relative to Model::refinementLevel* --
-        i.e., the refinement level (and thus, size) or a cell in this
-        grid is *NOT* necessarily 1/2^grid.level (or
-        1/refinement^grid.level), but it is whatever
-        Model::refinementOfLevel[grid.level] specifies. */
+      /*! level of this grid. 0 is the coarsest level, with cell size
+          of 1x1x1. Level 1 is 2x refined, level 2 is 4x refineded,
+          etc. Codes that use 4x or 8x refinements will simply be
+          stores by using only every log(brickSize)'th level */
       int      level;
       
       /*! any user-specified 32-bit int; this library will not assign
@@ -82,11 +85,6 @@ namespace tamr {
     
     static Model::SP load(const std::string &fileName);
     
-    /*! must be one int per level; a value of 'i' means that the
-        respective level's cells are a 2^i refinement of the unit
-        cell, so each cell on that level is 2^{-i} wide */
-    std::vector<int>       refinementOfLevel;
-    
     /*! array of all scalars, across all grids, across all scalar
         fields */
     std::vector<float>     scalars;
@@ -104,10 +102,8 @@ namespace tamr {
         contain */
     std::string userMeta;
 
-
     vec3f gridOrigin = { 0.f, 0.f, 0.f };
     vec3f gridOffset = { 1.f, 1.f, 1.f };
-    
   };
   
 } // ::tamr

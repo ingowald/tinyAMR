@@ -240,8 +240,6 @@ namespace tamr {
 
     std::vector<int> cellOffsets;
     Model::SP model = makeGrids(cells,cellOffsets);
-    for (int i=0;i<=maxLevel;i++)
-      model->refinementOfLevel.push_back((1<<i));
 
 #if 1
     if (scalarsFileNames.size() == 3) {
