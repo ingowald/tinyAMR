@@ -28,24 +28,49 @@ namespace tamr {
 
   struct Model {
     typedef std::shared_ptr<Model> SP;
+    struct FieldMeta;
     
     struct Grid {
+      //! number of all cell values for this grid _in_cluding ghost layers
+      int numTotalCells() const;
+      //! number of actual data cells, as given by 'dims', _ex_cluding ghosts
+      int numInnerCells() const;
+      /*! extract (only) the inner cells, and store them at the given
+        pointer. the pointer must be pre-allocated to be able to
+        store 'numInnerCells' */
+      void  extractInnerCells(float *whereToWrite,
+                              /* the full scalar field, as stored - with
+                                 proper offset - in Model::scalars[] */
+                              const Model::FieldMeta &field,
+                              const std::vector<float>& allScalars);
+      
       /*! origin of this grid, on the logical grid of this grid's
           respective level. Note these coordinates will typically need
           to be mulitples of the respective level's refinement level
-          to make sense. */
+          to make sense. Origin refers to the lower left front data
+          cell _ex_cludign ghost cells, so ghost cells can be to the
+          left/front of this origin value. */
       vec3i    origin;
       
-      /*! dimensions of this grid's 3D array of cells. The Nx*Ny*Nz
-          scalars for this grid will be stored at
-          scalars[grid.offset] in z-major order */
+      /*! dimensions of this grid's 3D array of cells, _ex_cluding
+        ghost cells.  The total number of cells for this grid -
+        including ghosts - is `dims+2*ghost`. Assuming
+        Mx=dims.x+2*ghost, My=dims.y+2*ghost, etc, then this grid's
+        Mx*My*Mz cells are stored, including ghosts, at
+        scalars[grid.offset] in z-major order. Careful, including
+        ghosts means that if numGhosts!=0, the value stored at
+        scalars[grid.offset] is a ghost cell, not the first data
+        cell. */
       vec3i    dims;
       
       /*! level of this grid. 0 is the coarsest level, with cell size
           of 1x1x1. Level 1 is 2x refined, level 2 is 4x refineded,
           etc. Codes that use 4x or 8x refinements will simply be
           stores by using only every log(brickSize)'th level */
-      int      level;
+      uint16_t level;
+      // number of ghost cells. this assumes euqal number in all
+      // direcions, and both on lower and upper end.
+      uint16_t numGhostCells  = 0;
       
       /*! any user-specified 32-bit int; this library will not assign
           any meaning to this value, nor will it even modify it */

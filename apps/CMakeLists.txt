@@ -13,6 +13,15 @@ endif()
 
 
 # ------------------------------------------------------------------
+# CHOMBO reader (e.g, for SILCC or SoaresFurtado test data)
+# ------------------------------------------------------------------
+if (TARGET tamr_chombo)
+  add_executable(chombo2tamr chombo2tamr.cpp)
+  target_link_libraries(chombo2tamr PUBLIC tamr_chombo)
+endif()
+
+
+# ------------------------------------------------------------------
 # EXABRICK style data
 # ------------------------------------------------------------------
 if (TARGET tamr_exa)

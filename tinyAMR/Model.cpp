@@ -25,6 +25,20 @@ namespace tamr {
 
   template<typename T> T read(std::istream &in)
   { T scalar; in.read((char*)&scalar,sizeof(scalar)); return scalar; }
+
+  //! number of all cell values for this grid _in_cluding ghost layers
+  int Model::Grid::numTotalCells() const
+  {
+    vec3i N = dims+2*numGhostCells;
+    return N.x*N.y*N.z;
+  }
+  
+  //! number of actual data cells, as given by 'dims', _ex_cluding ghosts
+  int Model::Grid::numInnerCells() const
+  {
+    vec3i N = dims;
+    return N.x*N.y*N.z;
+  }
   
   void writeString(std::ostream &out, const std::string &s)
   {

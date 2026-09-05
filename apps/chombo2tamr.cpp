@@ -14,57 +14,36 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tinyAMR/Model.h"
+#include "../importers/chombo.h"
 
 void usage(const std::string &error)
 {
   std::cout << "Error: " << error << "\n\n";
-  std::cout << "Usage: ./tamrInfo inFileName.tamr" << std::endl;
+  std::cout << "Usage: ./chombo2tamr inFileName.silcc -o outfile.tamr" << std::endl;
   exit(1);
 }
-
+  
 int main(int ac, char **av)
 {
   using namespace tamr;
     
   std::string inFileName;
+  std::string outFileName;
   for (int i=1;i<ac;i++) {
     const std::string arg = av[i];
-    if (arg[0] != '-') {
+    if (arg[0] != '-')
       inFileName = arg;
+    else if (arg == "-o") {
+      outFileName = av[++i];
     } else
-      usage("tamrinfo: unknown cmdline arg '"+arg+"'");
+      usage("chombo2tamr: unknown cmdline arg '"+arg+"'");
   }
-
+    
   if (inFileName.empty()) usage("no input file specified");
+  if (outFileName.empty()) usage("no output file specified");
 
-  tamr::Model::SP model = tamr::Model::load(inFileName);
-  std::cout << "num grids   " << prettyNumber(model->grids.size()) << std::endl;
-  std::cout << "num scalars " << prettyNumber(model->scalars.size()) << std::endl;
-  std::cout << "num fields  " << prettyNumber(model->fieldMetas.size()) << std::endl;
-  int maxLevelUsed = 0;
-  std::set<int> levelsUsed;
-  std::map<int,int> bricksOnLevel;
-  std::map<int,box3f> boundsOfLevel;
-  for (auto &grid : model->grids) {
-    levelsUsed.insert(grid.level);
-    bricksOnLevel[grid.level]++;
-    boundsOfLevel[grid.level].extend(vec3f(grid.origin));
-    boundsOfLevel[grid.level].extend(vec3f(grid.origin+grid.dims));
-    maxLevelUsed = std::max(maxLevelUsed,(int)grid.level);
-  }
-  for (auto &meta : model->fieldMetas)
-    std::cout << " - '" << meta.name << "' with array offset "
-              << prettyNumber(meta.offset) << std::endl;
-  std::cout << "num different levels used " << levelsUsed.size() << std::endl;
-  std::cout << "max refinement level used " << maxLevelUsed << std::endl;
-  std::cout << "levels used:" << std::endl;
-  for (auto l : levelsUsed) {
-    std::cout << "- level " << l
-              << " :\tnumBricks=" << bricksOnLevel[l]
-              << "\tnbounds = " << boundsOfLevel[l] << std::endl;
-  }
-  
+  Model::SP model = import_chombo(inFileName.c_str());
+  std::cout << "done reading, saving to " << outFileName << std::endl;
+  model->save(outFileName);
   return 0;
 }
-
