@@ -246,7 +246,7 @@ namespace tamr {
       std::cout << "seeing 3 scalars here ... computing vector norm of them" << std::endl;
       Model::FieldMeta field;
       field.offset = model->scalars.size();
-      field.numDimensions = 1;
+      // field.numDimensions = 1;
       field.name = scalarsFileNames[0];
       model->fieldMetas.push_back(field);
       
@@ -278,7 +278,7 @@ namespace tamr {
     for (auto fn : scalarsFileNames) {
       Model::FieldMeta field;
       field.offset = model->scalars.size();
-      field.numDimensions = 1;
+      // field.numDimensions = 1;
       field.name = fn;
       model->fieldMetas.push_back(field);
       

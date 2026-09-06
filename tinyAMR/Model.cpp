@@ -82,7 +82,9 @@ namespace tamr {
     write(out,(int)fieldMetas.size());
     for (auto &meta : fieldMetas) {
       writeString(out,meta.name);
-      write(out,meta.numDimensions);
+      //write(out,meta.numDimensions);
+      int wasNumDimensions = 1;
+      write(out,wasNumDimensions);
       write(out,meta.offset);
       writeString(out,meta.info);
     }
@@ -110,7 +112,9 @@ namespace tamr {
     model->fieldMetas.resize(read<int>(in));
     for (auto &meta : model->fieldMetas) {
       meta.name = readString(in);
-      meta.numDimensions = read<int>(in);
+      int wasNumDimensions;
+      // meta.numDimensions = read<int>(in);
+      wasNumDimensions = read<int>(in);
       meta.offset = read<uint64_t>(in);
       meta.info = readString(in);
     }

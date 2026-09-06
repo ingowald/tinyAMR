@@ -86,10 +86,6 @@ namespace tamr {
           what might or might not mean */
       std::string name = "<undefined>";
       
-      /*! number of dimensions; usually '1' but some codes can
-          generate 3D fields */
-      int         numDimensions = 1;
-
       /*! offset into the Model::scalars[] array. If this field
           contains more than one dimension the different dimensions
           are supposed to be stored consecutively in that array, so
