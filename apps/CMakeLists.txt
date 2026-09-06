@@ -31,3 +31,10 @@ endif()
 
 
 
+
+# ------------------------------------------------------------------
+# CHOMBO reader (e.g, for SILCC or SoaresFurtado test data)
+# ------------------------------------------------------------------
+add_executable(tampStripMC stripMC.cpp)
+target_link_libraries(tampStripMC PUBLIC tamr_chombo)
+
