@@ -33,8 +33,15 @@ endif()
 
 
 # ------------------------------------------------------------------
-# CHOMBO reader (e.g, for SILCC or SoaresFurtado test data)
+# tool for stripping ghost cells (from chombo imported data)
 # ------------------------------------------------------------------
 add_executable(tamrStripGhosts stripGhosts.cpp)
 target_link_libraries(tamrStripGhosts PUBLIC tamr_chombo)
+
+
+# ------------------------------------------------------------------
+# tool to compute vel_mag field from UVel, VVel, WVel (chombo)
+# ------------------------------------------------------------------
+add_executable(tamrComputeVelMag computeVelMag.cpp)
+target_link_libraries(tamrComputeVelMag PUBLIC tamr_chombo)
 
