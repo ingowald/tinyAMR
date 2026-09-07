@@ -24,6 +24,7 @@
 #include <vector>
 #include <stdexcept>
 #include <map>
+#include <cmath>
 // hdf5
 #include <H5Cpp.h>
 // tamr
@@ -209,10 +210,10 @@ namespace tamr {
     // ==================================================================
     size_t offset = 0;
     for (auto &grid : model->grids) {
-      grid.offset = offset;
+      if (grid.offset != offset) { PING; PRINT(offset); }
       offset += grid.numTotalCells();
     }
-    model->numCellsAcrossAllGrids = offset;
+    // model->numCellsAcrossAllGrids = offset;
     std::cout << "num cells, across all grids, including ghosts, per field : "
               << model->numCellsAcrossAllGrids << std::endl;
 
@@ -255,6 +256,8 @@ namespace tamr {
     const size_t totalNumCellsAcrossAllFields = offset;
     PRINT(totalNumCellsAcrossAllFields);
     model->scalars.resize(totalNumCellsAcrossAllFields);
+    for (auto &f : model->scalars)
+      f = NAN;
     
     // ==================================================================
     // now, read the actual scalars:
@@ -295,6 +298,8 @@ namespace tamr {
       // PRINT(allScalarsOnThisLevel);
 
       std::vector<double> scalarsOnThisLevel(allScalarsOnThisLevel);
+      for (auto &d : scalarsOnThisLevel)
+        d = NAN;
 
       /* we read this in chunks; as chunk size we choose
          'scalarsPerField'; note this does NOT mean that every chunk
@@ -319,6 +324,12 @@ namespace tamr {
                      memspace, data_spc);
       }
 
+      for (size_t i=0;i<scalarsOnThisLevel.size();i++) {
+        auto d = scalarsOnThisLevel[i];
+        if (isnan(d))
+          std::cout << "NAN at offset " << i << std::endl;
+      }
+      
       for (size_t gridIdx=0;gridIdx<numGridsOnLevel[level];gridIdx++) {
         auto grid = model->grids[firstGridOnLevel[level]+gridIdx];
         size_t numCellsInGrid = grid.numTotalCells();
@@ -338,19 +349,54 @@ namespace tamr {
           = scalarsOnThisLevel.data()
           + offsets[gridIdx];
         for (int fieldIdx=0;fieldIdx<numFields;fieldIdx++) {
+          if (in - scalarsOnThisLevel.data() >= scalarsOnThisLevel.size())
+            throw std::runtime_error("in overflow");
+          float lo = +INFINITY;
+          float hi = -INFINITY;
           float *out
             = model->scalars.data()
             + model->fieldMetas[fieldIdx].offset
             + grid.offset;
-          for (int i=0;i<numCellsInGrid;i++)
-            *out++ = *in++;
+          for (int i=0;i<numCellsInGrid;i++) {
+            float f = *in; ++in;
+            if (isnan(f)) {
+              std::cout << "input nan" << std::endl;
+              PRINT(i);
+              PRINT(fieldIdx);
+            }
+            lo = std::min(lo,f);
+            hi = std::max(hi,f);
+            if (!isnan(*out)) {
+              std::cout << "OUT is nan" << std::endl;
+            }
+            *out = f;
+            ++out;
+          }
+          std::cout << "range " << model->fieldMetas[fieldIdx].name << "[" << gridIdx
+                    << "] = " << lo << " .. " << hi << std::endl;
         }
       }
-      
+
       offsets_ds.close();
       data_ds.close();
       level_grp.close();
     }
+    for (auto f : model->scalars) {
+      if (isnan(f))
+        throw std::runtime_error("nan in final scalars");
+    }
+  }
+
+  void printRange(const float *cells, int count)
+  {
+    float lo = +INFINITY;
+    float hi = -INFINITY;
+    for (int i=0;i<count;i++) {
+      float f = cells[i];
+      lo = std::min(lo,f);
+      hi = std::max(hi,f);
+    }
+    std::cout << "range " << lo << " .. " << hi << std::endl;
   }
   
   Model::SP import_chombo(const char *fileName, int fieldIndex)
@@ -369,7 +415,7 @@ namespace tamr {
     std::cout << "just a few sanity prints ..." << std::endl;
     int numGridsToPrint = 16;
     for (int i=0;i<numGridsToPrint;i++) {
-      int gridID = (int)(model->grids.size()*(i+.5)/numGridsToPrint);
+      int gridID = i;//(int)(model->grids.size()*(i+.5)/numGridsToPrint);
       auto &grid = model->grids[gridID];
       std::cout << "=======================================================" << std::endl;
       std::cout << "grid #" << gridID
@@ -383,7 +429,10 @@ namespace tamr {
           = model->scalars.data()
           + field.offset
           + grid.offset;
+        PRINT(cells - model->scalars.data());
 
+        printRange(cells,grid.numTotalCells());
+        
         std::cout << "  * [0,0,x=:] (incl ghost) =";
         for (int i=0;i<N.x;i++) {
           vec3i idx(i,0,0);

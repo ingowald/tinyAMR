@@ -42,6 +42,7 @@ int main(int ac, char **av)
   std::cout << "num grids   " << prettyNumber(model->grids.size()) << std::endl;
   std::cout << "num scalars " << prettyNumber(model->scalars.size()) << std::endl;
   std::cout << "num fields  " << prettyNumber(model->fieldMetas.size()) << std::endl;
+  std::cout << "ghost cells " << model->grids[0].numGhostCells << std::endl;
   int maxLevelUsed = 0;
   std::set<int> levelsUsed;
   std::map<int,int> bricksOnLevel;

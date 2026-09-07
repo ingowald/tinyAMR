@@ -48,7 +48,7 @@ int main(int ac, char **av)
   for (auto &field : model->fieldMetas) {
     field.offset = outScalars.size();
     for (auto &grid : model->grids) {
-      vec3i N = grid.dims + vec3i(grid.numGhostCells);
+      vec3i N = grid.dims + 2*vec3i(grid.numGhostCells);
       int Ng = grid.numGhostCells;
       for (int iz=0;iz<N.z;iz++)
         for (int iy=0;iy<N.y;iy++)
@@ -57,9 +57,9 @@ int main(int ac, char **av)
             if (ix < Ng) continue;
             if (iy < Ng) continue;
             if (iz < Ng) continue;
-            if (ix-Ng >= grid.dims.x) continue;
-            if (iy-Ng >= grid.dims.y) continue;
-            if (iz-Ng >= grid.dims.z) continue;
+            if (ix >= grid.dims.x+Ng) continue;
+            if (iy >= grid.dims.y+Ng) continue;
+            if (iz >= grid.dims.z+Ng) continue;
             outScalars.push_back(f);
           }
     }
