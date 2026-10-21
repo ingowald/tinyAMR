@@ -73,6 +73,7 @@ int main(int ac, char **av)
     grid.numGhostCells = 0;
     offset += grid.numTotalCells();
   }
+  model->numCellsAcrossAllGrids = offset;
   std::cout << "saving to " << outFileName << std::endl;
   model->save(outFileName);
   std::cout << "saved, done" << std::endl;

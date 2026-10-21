@@ -42,7 +42,7 @@ namespace tamr {
   
   herr_t collect_levels_cb(hid_t g_id,
                            const char *name,
-                           const H5L_info1_t *info,
+                           const H5L_info_t *info,
                            void *cbPtr)
   {
     int level;
@@ -108,7 +108,7 @@ namespace tamr {
   //   //     H5::DataSpace dataspace = dataset.getSpace();
   // }
   
-  void readChombo(Model::SP model, H5::H5File &file)
+  void readChombo(Model::SP model, H5::H5File &file, int selectedField)
   {
     int numMC = -1;
     std::vector<int> usedLevels;
@@ -122,8 +122,8 @@ namespace tamr {
     // gather levels
     // ==================================================================
     idx = 0;
-    H5Literate1(file_id, H5_INDEX_NAME, H5_ITER_INC, &idx,
-                collect_levels_cb, (void*)&usedLevels);
+    H5Literate(file_id, H5_INDEX_NAME, H5_ITER_INC, &idx,
+               collect_levels_cb, (void*)&usedLevels);
     
     // tamr counts levels in refinements of 2
     int totalRefinement = 1;
@@ -240,15 +240,17 @@ namespace tamr {
     // ==================================================================
     // create field metas, with offsets
     // ==================================================================
+    if (selectedField < 0 || selectedField >= (int)foundComps.size())
+      throw std::runtime_error("chombo field index "
+                               + std::to_string(selectedField)
+                               + " is out of range");
+
     offset = 0;
-    for (auto &field : foundComps) {
-      Model::FieldMeta meta;
-      meta.name = field;
-      meta.offset = offset;
-      
-      model->fieldMetas.push_back(meta);
-      offset += model->numCellsAcrossAllGrids;
-    }
+    Model::FieldMeta meta;
+    meta.name = foundComps[selectedField];
+    meta.offset = 0;
+    model->fieldMetas.push_back(meta);
+    offset += model->numCellsAcrossAllGrids;
     for (int i=0;i<model->fieldMetas.size();i++)
       std::cout << "found field #" << i << ": " << model->fieldMetas[i].name
                 << ", to be stored at " << model->fieldMetas[i].offset
@@ -297,39 +299,7 @@ namespace tamr {
       // PRINT(data_dims[1]);
       // PRINT(allScalarsOnThisLevel);
 
-      std::vector<double> scalarsOnThisLevel(allScalarsOnThisLevel);
-      for (auto &d : scalarsOnThisLevel)
-        d = NAN;
-
-      /* we read this in chunks; as chunk size we choose
-         'scalarsPerField'; note this does NOT mean that every chunk
-         we read is one scalar field (it isn't!), but this is a value
-         we know that total num scalars is a multiple of, so easisest
-         to chunk in */
-      size_t numFields = model->fieldMetas.size();
-      size_t numChunks = numFields;
-      size_t scalarsPerChunk=allScalarsOnThisLevel/numChunks;
-
-      hsize_t mem_dims[2] = { scalarsPerChunk, 1 };
-      H5::DataSpace memspace(1, mem_dims);
-      for (size_t chunk=0;chunk<numChunks;chunk++) {
-        hsize_t offset[2] = { chunk * scalarsPerChunk, 0 };
-        hsize_t count[2]  = { scalarsPerChunk, 1 };
-        
-        data_spc.selectHyperslab(H5S_SELECT_SET, count, offset);
-        
-        // Read the chunk from the file into the memory buffer
-        data_ds.read(scalarsOnThisLevel.data() + chunk * scalarsPerChunk,
-                     H5::PredType::NATIVE_DOUBLE,
-                     memspace, data_spc);
-      }
-
-      for (size_t i=0;i<scalarsOnThisLevel.size();i++) {
-        auto d = scalarsOnThisLevel[i];
-        if (isnan(d))
-          std::cout << "NAN at offset " << i << std::endl;
-      }
-      
+      const size_t numFields = foundComps.size();
       for (size_t gridIdx=0;gridIdx<numGridsOnLevel[level];gridIdx++) {
         auto grid = model->grids[firstGridOnLevel[level]+gridIdx];
         size_t numCellsInGrid = grid.numTotalCells();
@@ -345,36 +315,15 @@ namespace tamr {
           PRINT(gridIdx);
           throw std::runtime_error("un-expected num scalars");
         }
-        const double *in
-          = scalarsOnThisLevel.data()
-          + offsets[gridIdx];
-        for (int fieldIdx=0;fieldIdx<numFields;fieldIdx++) {
-          if (in - scalarsOnThisLevel.data() >= scalarsOnThisLevel.size())
-            throw std::runtime_error("in overflow");
-          float lo = +INFINITY;
-          float hi = -INFINITY;
-          float *out
-            = model->scalars.data()
-            + model->fieldMetas[fieldIdx].offset
-            + grid.offset;
-          for (int i=0;i<numCellsInGrid;i++) {
-            float f = *in; ++in;
-            if (isnan(f)) {
-              std::cout << "input nan" << std::endl;
-              PRINT(i);
-              PRINT(fieldIdx);
-            }
-            lo = std::min(lo,f);
-            hi = std::max(hi,f);
-            if (!isnan(*out)) {
-              std::cout << "OUT is nan" << std::endl;
-            }
-            *out = f;
-            ++out;
-          }
-          std::cout << "range " << model->fieldMetas[fieldIdx].name << "[" << gridIdx
-                    << "] = " << lo << " .. " << hi << std::endl;
-        }
+
+        hsize_t fileOffset[1] = {
+          offsets[gridIdx] + size_t(selectedField) * numCellsInGrid
+        };
+        hsize_t count[1] = { numCellsInGrid };
+        data_spc.selectHyperslab(H5S_SELECT_SET, count, fileOffset);
+        H5::DataSpace memspace(1, count);
+        float *out = model->scalars.data() + grid.offset;
+        data_ds.read(out, H5::PredType::NATIVE_FLOAT, memspace, data_spc);
       }
 
       offsets_ds.close();
@@ -406,7 +355,7 @@ namespace tamr {
       return {};
     try {
       H5::H5File file(fileName, H5F_ACC_RDONLY);
-      readChombo(model,file);
+      readChombo(model,file,fieldIndex);
     } catch (H5::FileIException error) {
       error.printErrorStack();
       return {};

@@ -19,7 +19,8 @@
 void usage(const std::string &error)
 {
   std::cout << "Error: " << error << "\n\n";
-  std::cout << "Usage: ./chombo2tamr inFileName.silcc -o outfile.tamr" << std::endl;
+  std::cout << "Usage: ./chombo2tamr input.hdf5 -o output.tamr "
+               "[-f fieldIndex]" << std::endl;
   exit(1);
 }
   
@@ -29,12 +30,15 @@ int main(int ac, char **av)
     
   std::string inFileName;
   std::string outFileName;
+  int fieldIndex = 0;
   for (int i=1;i<ac;i++) {
     const std::string arg = av[i];
     if (arg[0] != '-')
       inFileName = arg;
     else if (arg == "-o") {
       outFileName = av[++i];
+    } else if (arg == "-f" || arg == "--field-index") {
+      fieldIndex = std::stoi(av[++i]);
     } else
       usage("chombo2tamr: unknown cmdline arg '"+arg+"'");
   }
@@ -42,7 +46,7 @@ int main(int ac, char **av)
   if (inFileName.empty()) usage("no input file specified");
   if (outFileName.empty()) usage("no output file specified");
 
-  Model::SP model = import_chombo(inFileName.c_str());
+  Model::SP model = import_chombo(inFileName.c_str(), fieldIndex);
   std::cout << "done reading, saving to " << outFileName << std::endl;
   model->save(outFileName);
   return 0;
